@@ -11,6 +11,10 @@ public class GerantDeClient implements Runnable
 	private String pseudo;
 	private Set<String> mutes;
 
+	private static final int MAX_MESSAGES = 10; 
+	private final List<String> messages = new ArrayList<>();
+
+
 	public GerantDeClient(Socket s, List<GerantDeClient> clients)
 	{
 		this.socket = s;
@@ -26,7 +30,7 @@ public class GerantDeClient implements Runnable
 			while (!estUnique)
 			{
 				estUnique = true;
-				out.println("Veuillez entrer votre nom d'utilisateur : ");
+				this.logMessage("Veuillez entrer votre nom d'utilisateur : ");
 				this.pseudo = in.readLine();
 
 				for (GerantDeClient client : clients)
@@ -38,11 +42,11 @@ public class GerantDeClient implements Runnable
 				}
 				if (!estUnique)
 				{
-					out.println("<SERVEUR> - Ce nom d'utilisateur est déjà pris. Veuillez en choisir un autre.");
+					this.logMessage("<SERVEUR> - Ce nom d'utilisateur est déjà pris. Veuillez en choisir un autre.");
 				}
 			}
 
-			out.println("<SERVEUR> - Bienvenue mon petit canard, " + this.pseudo + " !");
+			this.logMessage("<SERVEUR> - Bienvenue mon petit canard, " + this.pseudo + " !\nFais \"/help\" pour voir la liste des commandes");
 			System.out.println("<SERVEUR> - " +  this.pseudo + " s'est connecté.");
 
 			synchronized (clients)
@@ -52,7 +56,7 @@ public class GerantDeClient implements Runnable
 				{
 					if (client != this)
 					{
-						client.out.println("<SERVEUR> - " + this.pseudo + " a rejoint l'étang");
+						client.logMessage("<SERVEUR> - " + this.pseudo + " a rejoint l'étang");
 					}
 				}
 			}
@@ -105,7 +109,7 @@ public class GerantDeClient implements Runnable
 		String[] parties = commande.split(" ", 3);
 		if (parties.length < 3)
 		{
-			out.println("<SERVEUR> - Format incorrect. Utilisez : /msg <PseudoCible> <message>");
+			logMessage("<SERVEUR> - Format incorrect. Utilisez : /msg <PseudoCible> <Message>");
 		}
 		else
 		{
@@ -117,10 +121,10 @@ public class GerantDeClient implements Runnable
 			{
 				for (GerantDeClient client : clients)
 				{
-					if (client.pseudo.toLowerCase().equals(cible.toLowerCase()))
+					if (client.pseudo.equals(cible))
 					{
-						client.out.println("[Message privé de " + this.pseudo + "] : " + messagePriv);
-						this.out.println("[Message privé à " + cible + "] : " + messagePriv);
+						client.logMessage("[Message privé de " + this.pseudo + "] : " + messagePriv);
+						this.logMessage("[Message privé à " + cible + "] : " + messagePriv);
 						found = true;
 						break;
 					}
@@ -128,42 +132,40 @@ public class GerantDeClient implements Runnable
 			}
 			if (!found)
 			{
-				out.println("<SERVEUR> - Utilisateur " + cible + " introuvable.");
+				logMessage("<SERVEUR> - Utilisateur " + cible + " introuvable.");
 			}
 		}
 	}
 
 	private void messagePublic(String message)
 	{
-		System.out.println(pseudo + " : " + message);
-
 		synchronized (clients)
 		{
+			String fullMessage = "<" + this.pseudo + "> : " + message;
 			for (GerantDeClient client : clients)
 			{
-				if (client != this && !client.mutes.contains(this.pseudo))
+				if (!client.mutes.contains(this.pseudo))
 				{
-
-					client.out.println("<" + this.pseudo + "> : " + message);
-
+					client.logMessage(fullMessage);
 				}
 			}
 		}
 	}
+
 
 	private void rename(String commande)
 	{
 		String[] parties = commande.split(" ", 2);
 		if (parties.length < 2)
 		{
-			this.out.println("<SERVEUR> - Format incorrect. Utilisez : /rename <NouveauPseudo>");
+			this.logMessage("<SERVEUR> - Format incorrect. Utilisez : /rename <NouveauPseudo>");
 			return;
 		}
 
 		String nouveauPseudo = parties[1];
 		if ( this.pseudo.equals(nouveauPseudo))
 		{
-			this.out.println("<SERVEUR> - " + nouveauPseudo + " est déjà votre pseudo");
+			this.logMessage("<SERVEUR> - " + nouveauPseudo + " est déjà votre pseudo");
 			return;
 		}
 
@@ -171,7 +173,7 @@ public class GerantDeClient implements Runnable
 		{
 			if (client.pseudo.toLowerCase().equals(nouveauPseudo.toLowerCase()))
 			{
-				this.out.println("<SERVEUR> - Ce nom d'utilisateur est déjà pris.");
+				this.logMessage("<SERVEUR> - Ce nom d'utilisateur est déjà pris.");
 				return;
 			}
 		}
@@ -180,53 +182,48 @@ public class GerantDeClient implements Runnable
 		{
 			if (client != this)
 			{
-				client.out.println("<SERVEUR> - " + this.pseudo + " c'est renommé en " + nouveauPseudo);
+				client.logMessage("<SERVEUR> - " + this.pseudo + " c'est renommé en " + nouveauPseudo);
 			}
 		}
 
-		this.out.println("<SERVEUR> - Votre Pseudo est maintenant " + nouveauPseudo);
+		this.logMessage("<SERVEUR> - Votre Pseudo est maintenant " + nouveauPseudo);
 		this.pseudo = nouveauPseudo;
 
 	}
 
 	private void listUtilisateur()
 	{
-		String sRet = "<SERVEUR> - liste des utilisateurs \n";
-		for (GerantDeClient client : clients){ sRet += client.pseudo + "\n"; }
+		String sRet = "<SERVEUR> - liste des utilisateurs : ";
+		for (GerantDeClient client : clients){ sRet += "\n\t" + client.pseudo + "\n"; }
 
-		this.out.println(sRet);
+		this.logMessage(sRet);
 	}
 
 
-	private void muteUtilisateur(String commande)
-	{
-		String[] parties = commande.split(" ", 2);
-		if (parties.length < 2)
-		{
-			out.println("<SERVEUR> - Format incorrect. Utilisez : /mute <Pseudo>");
-			return;
-		}
+	private void muteUtilisateur(String commande) {
+	String[] parties = commande.split(" ", 2);
+	if (parties.length < 2) {
+		logMessage("<SERVEUR> - Format incorrect. Utilisez : /mute <Pseudo>");
+		return;
+	}
 
-		String cible = parties[1];
-		synchronized (clients)
-		{
-			boolean found = false;
-			for (GerantDeClient client : clients)
-			{
-				if (client.pseudo.equals(cible))
-				{
-					mutes.add(cible);
-					this.out.println("<SERVEUR> - " + cible + " est désormais mute");
-					found = true;
-					break;
-				}
+	String cible = parties[1];
+	synchronized (clients) {
+		boolean found = false;
+		for (GerantDeClient client : clients) {
+			if (client.pseudo.equals(cible)) {
+				mutes.add(cible);
+				logMessage("<SERVEUR> - Vous avez mute " + cible);
+				found = true;
+				break;
 			}
-			if (!found)
-			{
-				out.println("<SERVEUR> - Utilisateur " + cible + " introuvable.");
-			}
+		}
+		if (!found) {
+			logMessage("<SERVEUR> - Utilisateur " + cible + " introuvable.");
 		}
 	}
+	}
+
 
 
 	private void demuteUtilisateur(String commande)
@@ -234,31 +231,31 @@ public class GerantDeClient implements Runnable
 		String[] parties = commande.split(" ", 2);
 		if (parties.length < 2)
 		{
-			this.out.println("<SERVEUR> - Format incorrect. Utilisez : /demute <Pseudo>");
+			this.logMessage("<SERVEUR> - Format incorrect. Utilisez : /demute <Pseudo>");
 			return;
 		}
 
 		String cible = parties[1];
 		if (mutes.remove(cible))
 		{
-			out.println("<SERVEUR> - " + cible + " n'est plus mute");
+			logMessage("<SERVEUR> - " + cible + " n'est plus mute");
 			return;
 		}
 
-		this.out.println("<SERVEUR> - " + parties[1] + " n'etait pas mute");
+		this.logMessage("<SERVEUR> - " + parties[1] + " n'etait pas mute");
 	}
 
 
 	private void messageHelp()
 	{
-		this.out.println("<SERVEUR> - liste des commandes :"                                                    +"\n" +
-		                 "/msg <PseudoCible> <Message> : message privé à la personne cible"                     +"\n" +
-						 "/rename <NouveauPseudo> : permet de changer de pseudo"                                +"\n" +
-						 "/list  : affiche la liste des gens sur le tchat"                                      +"\n" +
-						 "/mute <PseudoCible>  : permet de ne plus afficher les messages de la personne cible"  +"\n" +
-						 "/demute <PseudoCible> : permet de réafficher les messages de la personne cible"       +"\n" +
-						 "/exit : permet de quitte le tchat"                                                    +"\n" +
-						 "/h : envoie la liste des commandes"                                                          );
+		this.logMessage("<SERVEUR> - liste des commandes :"                                                    +"\n" +
+		                "\t/msg <PseudoCible> <Message> : message privé à la personne cible"                     +"\n" +
+						"\t/rename <NouveauPseudo> : permet de changer de pseudo"                                +"\n" +
+						"\t/list  : affiche la liste des gens sur le tchat"                                      +"\n" +
+						"\t/mute <PseudoCible>  : permet de ne plus afficher les messages de la personne cible"  +"\n" +
+						"\t/demute <PseudoCible> : permet de réafficher les messages de la personne cible"       +"\n" +
+						"\t/exit : permet de quitte le tchat"                                                    +"\n" +
+						"\t/h : envoie la liste des commandes"                                                          );
 
 	}
 
@@ -272,7 +269,7 @@ public class GerantDeClient implements Runnable
 			{
 				if (client != this)
 				{
-					client.out.println("<SERVEUR> - " + pseudo + " a quitté l'étang");
+					client.logMessage("<SERVEUR> - " + pseudo + " a quitté l'étang");
 				}
 			}
 		}
@@ -289,4 +286,38 @@ public class GerantDeClient implements Runnable
 			System.out.println("Erreur lors de la fermeture des ressources : " + e.getMessage());
 		}
 	}
+
+	private void actualise()
+	{
+		out.print("\033[H");
+		out.print("\033[2J");
+
+		int start = Math.max(0, messages.size() - MAX_MESSAGES);
+		for (int i = start; i < messages.size(); i++)
+		{
+			out.println(messages.get(i));
+		}
+
+		out.println();
+
+		out.print("> ");
+		out.flush();
+	}
+
+	private void logMessage(String message)
+	{
+		synchronized (messages)
+		{
+
+			messages.add(message);
+
+			if (messages.size() > MAX_MESSAGES)
+			{
+				messages.remove(0);
+			}
+
+			this.actualise();
+		}
+	}
+
 }
