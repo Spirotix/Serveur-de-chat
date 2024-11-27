@@ -34,6 +34,11 @@ public class Serveur
 	}
 	public static void main(String[] args) 
 	{
-		new Serveur(6000);
+		if( args.length < 1){ System.out.println("Mauvais format : java Serveur <port>"); }
+		else
+		{
+			try { new Serveur(Integer.parseInt(args[0])); }
+			catch(Exception e){System.out.println("Veuillez rentrez un nombre valide : " + e.getMessage());}
+		}
 	}
 }
