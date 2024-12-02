@@ -5,14 +5,15 @@ public class Client
 {
 	public static void main(String[] args)
 	{
-		if ( args.length < 1 )
+		if ( args.length < 2 )
 		{
-			System.out.println("veuillez entrer un port : java Client <port>");
+			System.out.println("Syntaxe invalide : java Client <adresse> <port>");
 		}
 		else
 		{
-			int port = Integer.parseInt(args[0]);
-			try (Socket socket = new Socket("localhost", port);
+			int port  = Integer.parseInt(args[1]);
+			String ip = args[0];
+			try (Socket socket = new Socket(ip, port);
 				 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 				 BufferedReader inClient = new BufferedReader(new InputStreamReader(System.in));
 				 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);)
@@ -50,5 +51,4 @@ public class Client
 			}
 		}
 	}
-	
 }
