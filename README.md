@@ -21,7 +21,7 @@
      ```
      javac Client.java
      ```
-   - Lancez le client en spécifiant le même port et l'adresse du serveur :
+   - Lancez le client en spécifiant le même port que celui du serveur & l'adresse du serveur :
      ```
      java Client <adresse> <port>
      ```
