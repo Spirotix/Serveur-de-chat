@@ -319,7 +319,6 @@ public class GerantDeClient implements Runnable
 		out.print("\033[H");
 		out.print("\033[2J");
 
-		out.println("\n");
 		for (int i = 0; i < messages.size(); i++)
 		{
 			out.println(messages.get(i));
@@ -330,8 +329,7 @@ public class GerantDeClient implements Runnable
 		out.print("> ");
 		out.flush();
 	}
-	
-	//Enregistre les messages pour pouvoir les afficher avec actualise
+
 	private void logMessage(String message)
 	{
 		synchronized (this.messages)
@@ -343,7 +341,6 @@ public class GerantDeClient implements Runnable
 		}
 	}
 
-	//Supprime tous les message dans son log
 	private void clearlog()
 	{
 		this.messages.clear();
